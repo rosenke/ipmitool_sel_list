@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Purpose:	show difference between two runs of ipmitool sel list
+# Usage:	ipmitool_sel_list
+# Example:	ipmitool_sel_list
+# Responsible:	Stephan Rosenke <rosenke@ulb.tu-darmstadt.de>
+# License:	CC-BY-SA 3.0 unported
+# Version:	2011-01-07
+
+#set some user serviceable vars
+diff="/usr/bin/diff"
+diff_options="-u"
+ipmitool="/usr/bin/ipmitool"
+ipmitool_options="sel list"
+
+################################################################################
+# DO NOT MESS BEHIND THIS LINE #################################################
+################################################################################
+
+#set some non-user serviceable vars
+scriptname=$(basename $0)
+current="/var/log/${scriptname}_current"
+old="/var/log/${scriptname}_old"
+
+#functions
+check_binary () {
+ if [ ! -x "${1}" ] ; then
+  echo "${1} does not exist ... exiting"
+  exit 1
+ fi
+}
+ipmitool_current () {
+ "${ipmitool}" ${ipmitool_options} >"${current}"
+}
+
+#check if binaries exist
+for i in ${diff} ${ipmitool} ; do
+ check_binary "${i}"
+done
+
+#
+#main
+#
+
+#check if $current exists otherwise touch it
+test -e "${current}" || touch "${current}"
+#check if $old exists, rm it
+test -O "${old}" && rm "${old}"
+#mv $current to $old
+test -e "${old}" || mv "${current}" "${old}"
+
+#dump ipmitool with current data
+ipmitool_current
+
+#show differences
+"${diff}" "${diff_options}" "${current}" "${old}"
+
